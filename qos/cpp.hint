@@ -1,0 +1,2 @@
+#define QOS_API __declspec(dllexport)
+#define QOS_API __declspec(dllimport)
