@@ -1,4 +1,3 @@
 # Auto detect text files and perform LF normalization
 * text=auto
-# Ignore .gsc
-*.gsc text
+*.gsc linguist-detectable=false
