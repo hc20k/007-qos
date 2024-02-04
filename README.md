@@ -22,7 +22,7 @@ GSC menus!!!
 
 
 ## Commands
-* `dumpraw <filename>`: Dumps a rawfile to `<game dir>/dump`
+* `dumpraw`: Dumps all loaded rawfiles to `<game dir>/dump`
 * `loadzone <zone>`: Loads a zone. Example: `loadzone siena`
 
 ## Notes
