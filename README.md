@@ -33,4 +33,6 @@ GSC menus!!!
 **TODO:**
 * Uncap FPS
 * Fix `dvar_s` struct
-* maybe the same thing for 007: Legends if i'm feeling sadistic enough
+
+## Credits
+* [xoxor4d](https://github.com/xoxor4d) for the IW3 struct definitions <3
