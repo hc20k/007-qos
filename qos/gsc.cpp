@@ -105,6 +105,8 @@ unsigned int Scr_LoadScriptInternal_stub(const char* filename, struct PrecacheEn
 
 XAssetEntry* DB_LinkXAssetEntry_stub(XAssetEntry* newEntry, int allowOverride)
 {
+	*(bool*)memory::game_offset(0x11F4F706) = true; // so we can see script errors. too lazy to do this somewhere else
+
 	if (newEntry->asset.type == ASSET_TYPE_RAWFILE) {
 		auto rawfile = newEntry->asset.header.rawfile;
 		if (rawfile) {

@@ -152,14 +152,14 @@ void dump_rawfiles() {
 	// 0x100E9480 - DB_PrintAssetName
 
 	//DB_EnumXAssets(XAssetType type, void (__cdecl *func)(XAssetHeader *__struct_ptr, void *), void *inData, _BOOL1 includeOverride)
-	auto DB_EnumXAssets = (void(__cdecl*)(int, void(__cdecl*)(game::XAssetHeader, void*), void*, bool))memory::game_offset(0x100E96A0);
+	const auto DB_EnumXAssets = (void(__cdecl*)(int, void(__cdecl*)(game::XAssetHeader, void*), void*, bool))memory::game_offset(0x100E96A0);
 
 	std::filesystem::path path = "dump";
 	if (!std::filesystem::exists(path)) {
 		std::filesystem::create_directory(path);
 	}
 
-	auto iter_func = [](game::XAssetHeader header, void* data) {
+	auto iter_rawfile = [](game::XAssetHeader header, void* data) {
 		auto rawfile = header.rawfile;
 		if (!rawfile) {
 			return;
@@ -182,8 +182,28 @@ void dump_rawfiles() {
 		spdlog::info("Dumped rawfile: {}", filename);
 	};
 
-	auto type = game::ASSET_TYPE_RAWFILE;
-	DB_EnumXAssets(type, iter_func, &type, 0);
+
+	DB_EnumXAssets(game::ASSET_TYPE_RAWFILE, iter_rawfile, NULL, 0);
+}
+
+void loadzone() {
+	// this is pretty buggy lol
+	auto argc = *(int*)memory::game_offset(0x11FA75F4);
+	auto argv = *(int**)memory::game_offset(0x11FA7614);
+
+
+	if (argc < 2) {
+		spdlog::error("Usage: loadzone <zone>");
+		return;
+	}
+
+	auto zone = (const char*)(argv[argc - 1]);
+	spdlog::info("Loading zone: {}", zone);
+
+	const auto DB_LoadXZone = (void(__cdecl*)(game::XZoneInfo*, uint32_t zonecount))memory::game_offset(0x100EA360);
+	auto info = game::XZoneInfo{};
+	info.name = zone;
+	DB_LoadXZone(&info, 1);
 }
 
 uint64_t Dvar_AddCommands_o = 0;
@@ -192,6 +212,7 @@ void Dvar_AddCommands_stub() {
 
 	// add custom commands
 	Cmd_AddCommandInternal("dumpraw", dump_rawfiles);
+	Cmd_AddCommandInternal("loadzone", loadzone);
 }
 
 void core::entrypoint(HMODULE mod)

@@ -3362,14 +3362,13 @@ union XAssetHeader
 	GfxLightDef* lightDef;
 	// 			Font_s *font;
 	// 			MenuList *menuList;
-	// 			menuDef_t *menu;
+	// menuDef_t *menu;
 	// 			LocalizeEntry *localize;
 	// 			WeaponDef *weapon;
 	// 			SndDriverGlobals *sndDriverGlobals;
 	FxEffectDef* fx;
 	// 			FxImpactTable *impactFx;
 	RawFile* rawfile;
-	// 			StringTable *stringTable;
 };
 
 struct XAsset
