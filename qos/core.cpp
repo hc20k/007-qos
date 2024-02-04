@@ -1,26 +1,24 @@
 #include "core.h"
 #include "memory.h"
-#include "filesystem.h"
 #include "shared.h"
 #include "misc_patches.h"
 #include "gsc.h"
 #include "structs.hpp"
 #include <polyhook2/Detour/x86Detour.hpp>
+#include "functions.hpp"
 
 std::unique_ptr<PLH::x86Detour> open_dev_console_hook;
 std::unique_ptr<PLH::x86Detour> Com_Printf_hook;
-std::unique_ptr<PLH::x86Detour> DB_FindXAssetHeader_hook;
 std::unique_ptr<PLH::x86Detour> R_EndFrame_hook;
 std::unique_ptr<PLH::x86Detour> Dvar_AddCommands_hook;
+
+HWND output_textbox = 0;
 
 typedef void(__cdecl* Cbuf_AddText_t)(const char*, int);
 Cbuf_AddText_t Cbuf_AddText_f = 0;
 
 typedef void(__cdecl* CL_ForwardCommandToServer_t)(const char* cmd);
 CL_ForwardCommandToServer_t CL_ForwardCommandToServer = 0;
-
-typedef int(__cdecl* DB_FindXAssetHeader_t)(int type, const char* name, bool returnDefault);
-DB_FindXAssetHeader_t DB_FindXAssetHeader = 0;
 
 void Cmd_AddCommandInternal(const char* name, void(__cdecl* function)()) {
 	auto last_cmd_addr = (uint64_t)memory::game_offset(0x11FA7638);
@@ -87,34 +85,21 @@ void show_console()
 	CreateThread(0, 0, (LPTHREAD_START_ROUTINE)read_console_thread, 0, 0, 0);
 }
 
-uint64_t o_wndproc = 0;
-LRESULT dev_console_wndproc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-	spdlog::info("wndproc: {}", uMsg);
-
-	// call original wndproc
-	return DefWindowProc(hwnd, uMsg, wParam, lParam);
-}
-
 void open_dev_console() {
 	spdlog::info("Opening dev console");
 	auto open_console_addr = memory::game_offset(0x104AD1C0);
-	auto wndproc_addr = memory::game_offset(0x104ACC30);
 
-	open_dev_console_hook = std::make_unique<PLH::x86Detour>((uint64_t)wndproc_addr, (uint64_t)dev_console_wndproc, &o_wndproc);
-	open_dev_console_hook->hook();
+	__asm { call open_console_addr }
 
-	__asm {
-		// takes no arguments
-		call open_console_addr
-	}
-}
+	auto hwnd = *(HWND*)memory::game_offset(0x1208CED0);
+	spdlog::info("Console Hwnd: {}", (void*)hwnd);
 
-void wait_for_debugger() {
-	while (1) {
-		if (IsDebuggerPresent()) {
-			break;
-		}
-		Sleep(500);
+	output_textbox = *(HWND*)memory::game_offset(0x1208CED4);
+	
+	MSG msg;
+	while (GetMessage(&msg, hwnd, 0, 0)) {
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
 	}
 }
 
@@ -125,21 +110,23 @@ int Com_Printf(int channel, const char* fmt, ...) {
 	vsnprintf(buffer, 1024, fmt, args);
 	va_end(args);
 
-	// remove trailing newline
-	if (strlen(buffer) > 0 &&
-		buffer[strlen(buffer) - 1] == '\n') {
-		buffer[strlen(buffer) - 1] = 0;	
+	if (output_textbox) {
+		auto len = GetWindowTextLength(output_textbox);
+		SendMessage(output_textbox, EM_SETSEL, len, len);
+		SendMessage(output_textbox, EM_REPLACESEL, 0, (LPARAM)buffer);
+		SendMessage(output_textbox, EM_REPLACESEL, 0, (LPARAM)"\r\n");
+
+		SendMessage(output_textbox, EM_SCROLL, SB_BOTTOM, 0);
 	}
 
-	spdlog::info(buffer);
-	return 0;
-}
+	// remove trailing newline
+	//if (strlen(buffer) > 0 &&
+	//	buffer[strlen(buffer) - 1] == '\n') {
+	//	buffer[strlen(buffer) - 1] = 0;	
+	//}
 
-uint64_t DB_FindXAssetHeader_o = 0;
-int DB_FindXAssetHeader_stub(int type, const char* name, bool returnDefault) {
-	//spdlog::info("DB_FindXAssetHeader: type: {}, name: {}", type, name);
-	
-	return DB_FindXAssetHeader(type, name, type);
+	//spdlog::info(buffer);
+	return 0;
 }
 
 bool setup_ui = false;
@@ -153,21 +140,50 @@ void R_EndFrame_stub() {
 	reinterpret_cast<void(*)()>(R_EndFrame_o)();
 }
 
-void list_assets() {
-	spdlog::info("Listing assets");
+uint64_t SaveGame_o = 0;
+bool SaveGame_stub() {
+	return 1;
+}
+
+void dump_rawfiles() {
+	spdlog::info("Listing rawfiles");
 
 	// 0x100E96A0 - DB_EnumXAssets
 	// 0x100E9480 - DB_PrintAssetName
 
 	//DB_EnumXAssets(XAssetType type, void (__cdecl *func)(XAssetHeader *__struct_ptr, void *), void *inData, _BOOL1 includeOverride)
-	auto DB_EnumXAssets = (void(__cdecl*)(int, void(__cdecl*)(game::XAssetHeader*, void*), void*, bool))memory::game_offset(0x100E96A0);
-	auto DB_PrintAssetName = (void(__cdecl*)(game::XAssetHeader*, void*))memory::game_offset(0x100E9480);
+	auto DB_EnumXAssets = (void(__cdecl*)(int, void(__cdecl*)(game::XAssetHeader, void*), void*, bool))memory::game_offset(0x100E96A0);
 
-	for (int i = 0; i < 20; i++) {
-		spdlog::info("--------- Type: {} ----------", i);
-		int type = i;
-		DB_EnumXAssets(type, DB_PrintAssetName, &type, 0);
+	std::filesystem::path path = "dump";
+	if (!std::filesystem::exists(path)) {
+		std::filesystem::create_directory(path);
 	}
+
+	auto iter_func = [](game::XAssetHeader header, void* data) {
+		auto rawfile = header.rawfile;
+		if (!rawfile) {
+			return;
+		}
+
+		auto filename = fmt::format("dump/{}", rawfile->name);
+		// create directories
+		std::filesystem::create_directories(std::filesystem::path(filename).parent_path());
+		
+		// write to file
+		std::ofstream file(filename, std::ios::binary);
+		if (!file.is_open()) {
+			spdlog::error("Failed to open file: {}", filename);
+			return;
+		}
+
+		file.write((char*)rawfile->buffer, rawfile->len);
+		file.close();
+
+		spdlog::info("Dumped rawfile: {}", filename);
+	};
+
+	auto type = game::ASSET_TYPE_RAWFILE;
+	DB_EnumXAssets(type, iter_func, &type, 0);
 }
 
 uint64_t Dvar_AddCommands_o = 0;
@@ -175,7 +191,7 @@ void Dvar_AddCommands_stub() {
 	reinterpret_cast<void(*)()>(Dvar_AddCommands_o)();
 
 	// add custom commands
-	Cmd_AddCommandInternal("listassets", list_assets);
+	Cmd_AddCommandInternal("dumpraw", dump_rawfiles);
 }
 
 void core::entrypoint(HMODULE mod)
@@ -193,9 +209,8 @@ void core::entrypoint(HMODULE mod)
 	assert (jb != NULL);
 	memory::game = jb;
 
-	spdlog::info("jb_sp_s.dll found!");
+	spdlog::info("jb_sp_s.dll: {}", (void*)jb);
 
-	filesystem::init();
 	misc_patches::init();
 	gsc::init();
 
@@ -209,12 +224,9 @@ void core::entrypoint(HMODULE mod)
 	Com_Printf_hook = std::make_unique<PLH::x86Detour>((uint64_t)memory::game_offset(0x1032F620), (uint64_t)Com_Printf, &temp);
 	Com_Printf_hook->hook();
 
-	DB_FindXAssetHeader_hook = std::make_unique<PLH::x86Detour>((uint64_t)memory::game_offset(0x100E9A90), (uint64_t)DB_FindXAssetHeader_stub, &DB_FindXAssetHeader_o);
-	DB_FindXAssetHeader_hook->hook();
-	DB_FindXAssetHeader = (DB_FindXAssetHeader_t)DB_FindXAssetHeader_o;
-
 	R_EndFrame_hook = std::make_unique<PLH::x86Detour>((uint64_t)memory::game_offset(0x1010CFA0), (uint64_t)R_EndFrame_stub, &R_EndFrame_o);
 	//R_EndFrame_hook->hook();
 
+	std::thread(open_dev_console).detach();
 	Sleep(3000);
 }

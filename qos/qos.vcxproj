@@ -103,8 +103,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="core.h" />
-    <ClInclude Include="filesystem.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="functions.hpp" />
     <ClInclude Include="gsc.h" />
     <ClInclude Include="memory.h" />
     <ClInclude Include="misc_patches.h" />
@@ -114,7 +114,6 @@
   <ItemGroup>
     <ClCompile Include="core.cpp" />
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="filesystem.cpp" />
     <ClCompile Include="gsc.cpp" />
     <ClCompile Include="memory.cpp" />
     <ClCompile Include="misc_patches.cpp" />

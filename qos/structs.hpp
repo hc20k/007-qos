@@ -353,44 +353,41 @@ enum scrVertAlignment
 
 enum XAssetType
 {
-	/*
 	ASSET_TYPE_XMODELPIECES = 0x0,
 	ASSET_TYPE_PHYSPRESET = 0x1,
-	ASSET_TYPE_XANIMPARTS = 0x2,
-	ASSET_TYPE_XMODEL = 0x3,
-	ASSET_TYPE_MATERIAL = 0x4,
-	ASSET_TYPE_TECHNIQUE_SET = 0x5,
-	ASSET_TYPE_IMAGE = 0x6,
-	ASSET_TYPE_SOUND = 0x7,
-	ASSET_TYPE_SOUND_CURVE = 0x8,
-	ASSET_TYPE_LOADED_SOUND = 0x9,
-	ASSET_TYPE_CLIPMAP = 0xA,
-	ASSET_TYPE_CLIPMAP_PVS = 0xB,
-	ASSET_TYPE_COMWORLD = 0xC,
-	ASSET_TYPE_GAMEWORLD_SP = 0xD,
-	ASSET_TYPE_GAMEWORLD_MP = 0xE,
-	ASSET_TYPE_MAP_ENTS = 0xF,
-	ASSET_TYPE_GFXWORLD = 0x10,
-	ASSET_TYPE_LIGHT_DEF = 0x11,
-	ASSET_TYPE_UI_MAP = 0x12,
-	ASSET_TYPE_FONT = 0x13,
-	ASSET_TYPE_MENULIST = 0x14,
-	ASSET_TYPE_MENU = 0x15,
-	ASSET_TYPE_LOCALIZE_ENTRY = 0x16,
-	ASSET_TYPE_WEAPON = 0x17,
-	ASSET_TYPE_SNDDRIVER_GLOBALS = 0x18,
-	ASSET_TYPE_FX = 0x19,
-	ASSET_TYPE_IMPACT_FX = 0x1A,
-	ASSET_TYPE_AITYPE = 0x1B,
-	ASSET_TYPE_MPTYPE = 0x1C,
-	ASSET_TYPE_CHARACTER = 0x1D,
-	ASSET_TYPE_XMODELALIAS = 0x1E,
-	ASSET_TYPE_RAWFILE = 0x1F,
-	ASSET_TYPE_STRINGTABLE = 0x20,
-	ASSET_TYPE_COUNT = 0x21,
-	ASSET_TYPE_STRING = 0x21,
-	ASSET_TYPE_ASSETLIST = 0x22,
-	*/
+	ASSET_TYPE_PHYSCONSTRAINTS = 0x2,
+	ASSET_TYPE_DESTRUCTIBLEDEF = 0x3,
+	ASSET_TYPE_XANIMPARTS = 0x4,
+	ASSET_TYPE_XMODEL = 0x5,
+	ASSET_TYPE_MATERIAL = 0x6,
+	ASSET_TYPE_TECHNIQUE_SET = 0x7,
+	ASSET_TYPE_IMAGE = 0x8,
+	ASSET_TYPE_SOUND = 0x9,
+	ASSET_TYPE_SOUND_PATCH = 0xA,
+	ASSET_TYPE_CLIPMAP = 0xB,
+	ASSET_TYPE_CLIPMAP_PVS = 0xC,
+	ASSET_TYPE_COMWORLD = 0xD,
+	ASSET_TYPE_GAMEWORLD_SP = 0xE,
+	ASSET_TYPE_GAMEWORLD_MP = 0xF,
+	ASSET_TYPE_MAP_ENTS = 0x10,
+	ASSET_TYPE_GFXWORLD = 0x11,
+	ASSET_TYPE_LIGHT_DEF = 0x12,
+	ASSET_TYPE_UI_MAP = 0x13,
+	ASSET_TYPE_FONT = 0x14,
+	ASSET_TYPE_MENULIST = 0x15,
+	ASSET_TYPE_MENU = 0x16,
+	ASSET_TYPE_LOCALIZE_ENTRY = 0x17,
+	ASSET_TYPE_WEAPON = 0x18,
+	ASSET_TYPE_SNDDRIVER_GLOBALS = 0x19,
+	ASSET_TYPE_FX = 0x1A,
+	ASSET_TYPE_IMPACT_FX = 0x1B,
+	ASSET_TYPE_AITYPE = 0x1C,
+	ASSET_TYPE_MPTYPE = 0x1D,
+	ASSET_TYPE_CHARACTER = 0x1E,
+	ASSET_TYPE_XMODELALIAS = 0x1F,
+	ASSET_TYPE_RAWFILE = 0x20,
+	ASSET_TYPE_STRINGTABLE = 0x21,
+	//...
 };
 
 struct cmd_function_s
@@ -429,17 +426,6 @@ union DvarLimits
 	} vector;
 };
 
-union DvarValue
-{
-	bool enabled;
-	int integer;
-	unsigned int unsignedInt;
-	float value;
-	float vector[4];
-	const char *string;
-	char color[4];
-};
-
 enum DvarType
 {
 	DVAR_TYPE_BOOL = 0x0,
@@ -468,21 +454,16 @@ enum class dvar_type : std::int8_t
 	rgb = 9 // Color without alpha
 };
 
-//enum dvar_flags : std::uint16_t
-//{
-//	none = 0,
-//	saved = 1 << 0,
-//	latched = 1 << 1,
-//	cheat_protected = 1 << 2,
-//	replicated = 1 << 3,
-//	user_created = 1 << 8,
-//	user_info = 1 << 9,
-//	server_info = 1 << 10,
-//	write_protected = 1 << 11,
-//	read_only = 1 << 13,
-//	auto_exec = 1 << 15,
-//	printable = 1 << 16,
-//};
+union DvarValue
+{
+	bool enabled;
+	int integer;
+	unsigned int unsignedInt;
+	float value;
+	float vector[4];
+	const char *string;
+	char color[4];
+};
 
 enum dvar_flags : std::uint16_t
 {
@@ -503,13 +484,11 @@ enum dvar_flags : std::uint16_t
 struct dvar_s
 {
 	const char *name;
-	const char *description;
-	//unsigned __int16 flags;
+	DvarValue current;
 	dvar_flags flags;
-	//char type;
+	const char *description;
 	dvar_type type;
 	bool modified;
-	DvarValue current;
 	DvarValue latched;
 	DvarValue reset;
 	DvarLimits domain;

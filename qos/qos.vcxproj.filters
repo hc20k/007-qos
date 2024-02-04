@@ -36,13 +36,13 @@
     <ClInclude Include="gsc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="filesystem.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="structs.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="misc_patches.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="functions.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -57,9 +57,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="gsc.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="filesystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="misc_patches.cpp">
