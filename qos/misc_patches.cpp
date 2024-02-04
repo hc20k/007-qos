@@ -30,6 +30,8 @@ dvar_s* __cdecl Dvar_RegisterNew_stub(const char* dvarName, dvar_type type, dvar
 	dvar->flags = (dvar_flags)(dvar->flags & ~dvar_flags::read_only); // remove read_only flag
 	dvar->flags = (dvar_flags)(dvar->flags & ~dvar_flags::write_protected); // remove write_protected flag
 
+	// this doesn't work rn because of struct problems...
+
 	if (!dvar)
 	{
 		spdlog::error("Failed to register dvar: {}", dvarName);
@@ -53,5 +55,5 @@ void misc_patches::init()
 	R_CreateWindow_hook->hook();
 
 	Dvar_RegisterNew_hook = std::make_shared<PLH::x86Detour>((uint64_t)memory::game_offset(0x1024BFA0), (uint64_t)Dvar_RegisterNew_stub, &o_Dvar_RegisterNew);
-	Dvar_RegisterNew_hook->hook();
+	//Dvar_RegisterNew_hook->hook();
 }

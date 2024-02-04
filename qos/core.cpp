@@ -67,7 +67,6 @@ void read_console_thread() {
 			continue;
 		}
 
-		//CL_ForwardCommandToServer(buffer);
 		Cbuf_AddText(buffer, 0);
 	}
 }
@@ -117,15 +116,9 @@ int Com_Printf(int channel, const char* fmt, ...) {
 		SendMessage(output_textbox, EM_REPLACESEL, 0, (LPARAM)"\r\n");
 
 		SendMessage(output_textbox, EM_SCROLL, SB_BOTTOM, 0);
+
+		// TODO: truncate beginning if too long
 	}
-
-	// remove trailing newline
-	//if (strlen(buffer) > 0 &&
-	//	buffer[strlen(buffer) - 1] == '\n') {
-	//	buffer[strlen(buffer) - 1] = 0;	
-	//}
-
-	//spdlog::info(buffer);
 	return 0;
 }
 
