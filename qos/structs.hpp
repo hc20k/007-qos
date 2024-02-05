@@ -461,8 +461,39 @@ union DvarValue
 	unsigned int unsignedInt;
 	float value;
 	float vector[4];
-	const char *string;
+	const char* string;
+	DvarValueStringBuf stringBuf;
 	char color[4];
+};
+
+struct DvarValueStringBuf
+{
+	const char* pad;
+	char string[12];
+};
+
+union DvarLimits
+{
+	struct enumeration
+	{
+		int stringCount;
+		const char** strings;
+	};
+	struct integer
+	{
+		int min;
+		int max;
+	};
+	struct value
+	{
+		float min;
+		float max;
+	};
+	struct vector
+	{
+		float min;
+		float max;
+	};
 };
 
 enum dvar_flags : std::uint16_t
@@ -483,17 +514,17 @@ enum dvar_flags : std::uint16_t
 
 struct dvar_s
 {
-	const char *name;
-	DvarValue current;
+	const char* name;
+	const char* description;
 	dvar_flags flags;
-	const char *description;
 	dvar_type type;
 	bool modified;
+	DvarValue current;
 	DvarValue latched;
 	DvarValue reset;
 	DvarLimits domain;
-	bool(__cdecl *domainFunc)(dvar_s *, DvarValue);
-	dvar_s *hashNext;
+	dvar_s* next;
+	dvar_s* hashNext;
 };
 
 enum DB_FILE_EXISTS_PATH
