@@ -211,15 +211,7 @@ void Dvar_AddCommands_stub() {
 void core::entrypoint(HMODULE mod)
 {
 	show_console();
-
-	spdlog::info("Waiting for jb_sp_s.dll");
-
 	auto jb = GetModuleHandle("jb_sp_s.dll");
-	while (jb == NULL)
-	{
-		Sleep(1);
-	}
-	
 	assert (jb != NULL);
 	memory::game = jb;
 
